@@ -8,4 +8,4 @@ This Rust library is an unofficial libray to the EskomSePush API
 - [ ] Add examples
 - [ ] Allow for getting API key from environment variables
 - [ ] Features to control sync and async functionality
-- [ ] Improve status struct to allow for more flexible structure for future proofing (Towns/cities with different loadshedding schedule might be added in the future)
+- [x] Improve status struct to allow for more flexible structure for future proofing (Towns/cities with different loadshedding schedule might be added in the future)
