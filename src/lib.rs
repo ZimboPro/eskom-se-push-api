@@ -138,7 +138,7 @@ impl EskomAPIAsync {
                     }
             },
             Err(err) => {
-                return if err.is_timeout() {
+                if err.is_timeout() {
                     Err(HttpError::Timeout)
                 } else if err.is_status() {
                     Err(HttpError::ResponseError(err))
@@ -223,7 +223,7 @@ impl EskomAPI {
                     }
             },
             Err(err) => {
-                return if err.is_timeout() {
+                if err.is_timeout() {
                     Err(HttpError::Timeout)
                 } else if err.is_status() {
                     Err(HttpError::ResponseError(err))
