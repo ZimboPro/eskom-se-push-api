@@ -164,7 +164,7 @@ impl EskomAPI {
     /// Other keys in the `status` refer to different municipalities and potential overrides from the National status; most typically present is the key for `capetown`
     pub fn status(&self) -> Result<EskomStatus, HttpError> {
         let t = self.client.get(Endpoints::Status.to_string()).send();
-        return self.handle_response_async::<EskomStatus>(t);
+        return self.handle_response::<EskomStatus>(t);
     }
     
     /// Obtain the `id` from Area Find or Area Search and use with this request. This single request has everything you need to monitor upcoming loadshedding events for the chosen suburb.
@@ -172,7 +172,7 @@ impl EskomAPI {
         let t = self.client.get(Endpoints::AreaInfo.to_string())
             .query(&[("id", id)])
             .send();
-        return self.handle_response_async::<AreaInfo>(t);
+        return self.handle_response::<AreaInfo>(t);
     }
     
     /// Find areas based on GPS coordinates (latitude and longitude).
@@ -181,7 +181,7 @@ impl EskomAPI {
         let t = self.client.get(Endpoints::AreasNearby.to_string())
             .query(&[("lat", lat.to_string()), ("lon", long.to_string())])
             .send();
-        return self.handle_response_async::<AreaNearby>(t);
+        return self.handle_response::<AreaNearby>(t);
     }
     
     /// Search area based on text
@@ -189,7 +189,7 @@ impl EskomAPI {
         let t = self.client.get(Endpoints::AreasSearch.to_string())
             .query(&[("text", search_term)])
             .send();
-        return self.handle_response_async::<AreaSearch>(t);
+        return self.handle_response::<AreaSearch>(t);
     }
     
     /// Find topics created by users based on GPS coordinates (latitude and longitude). Can use this to detect if there is a potential outage/problem nearby
@@ -197,17 +197,17 @@ impl EskomAPI {
         let t = self.client.get(Endpoints::TopicsNearby.to_string())
             .query(&[("lat", lat.to_string()), ("lon", long.to_string())])
             .send();
-        return self.handle_response_async::<TopicsNearby>(t);
+        return self.handle_response::<TopicsNearby>(t);
     }
     
     /// Check allowance allocated for token
     /// `NOTE`: This call doesn't count towards your quota.
-    pub fn check_allowance_async(&self) -> Result<AllowanceCheck, HttpError> {
+    pub fn check_allowance(&self) -> Result<AllowanceCheck, HttpError> {
         let t = self.client.get(Endpoints::CheckAllowace.to_string()).send();
-        return self.handle_response_async::<AllowanceCheck>(t);
+        return self.handle_response::<AllowanceCheck>(t);
     }
 
-    fn handle_response_async<T: DeserializeOwned>(&self, response: Result<reqwest::blocking::Response, reqwest::Error>) -> Result<T, HttpError> {
+    fn handle_response<T: DeserializeOwned>(&self, response: Result<reqwest::blocking::Response, reqwest::Error>) -> Result<T, HttpError> {
         return match response {
             Ok(resp) => {
                     let r = resp.json::<T>();
