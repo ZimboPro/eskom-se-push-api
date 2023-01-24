@@ -4,13 +4,17 @@ use serde::Serialize;
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AreaSearch {
-    pub areas: Vec<Area>,
+  /// Vec of areas
+  pub areas: Vec<Area>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Area {
-    pub id: String,
-    pub name: String,
-    pub region: String,
+  /// ID of the area. To be used when querying for the related info.
+  pub id: String,
+  /// Name of the area.
+  pub name: String,
+  /// Region the area is in.
+  pub region: String,
 }
