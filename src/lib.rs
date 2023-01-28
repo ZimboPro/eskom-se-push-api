@@ -2,11 +2,11 @@ use allowance::AllowanceCheck;
 use area_info::AreaInfo;
 use area_nearby::AreaNearby;
 use area_search::AreaSearch;
-use reqwest::Response;
+use dotenv;
+use reqwest::{Response, StatusCode};
 use serde::de::DeserializeOwned;
 use status::EskomStatus;
 use topics_nearby::TopicsNearby;
-use dotenv;
 extern crate thiserror;
 
 pub mod allowance;
@@ -30,14 +30,28 @@ pub struct EskomAPI {
 
 #[derive(thiserror::Error, Debug)]
 pub enum HttpError {
-  #[error("Bad Request: {0}")]
-  ResponseError(#[from] reqwest::Error), //400
+  #[error("API Error: {0}")]
+  APIError(#[from] APIError), //400
   #[error("Timeout")]
   Timeout,
   #[error("No Internet")]
   NoInternet,
   #[error("UnknownError")]
   Unknown,
+  #[error("Response Error: {0}")]
+  ResponseError(#[from] reqwest::Error),
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum APIError {
+  #[error("Bad Request (You sent something bad)")]
+  BadRequest,
+  #[error("Not Authenticated (Token Invalid / Disabled)")]
+  Forbidden,
+  #[error("Not found")]
+  NotFound,
+  #[error("Too Many Requests (Token quota exceeded)")]
+  TooManyRequests,
 }
 
 enum Endpoints {
@@ -321,14 +335,29 @@ impl EskomAPI {
   ) -> Result<T, HttpError> {
     return match response {
       Ok(resp) => {
-        let r = resp.json::<T>();
-        match r {
-          Ok(r) => Ok(r),
-          Err(e) => {
-            if e.is_decode() {
-              Err(HttpError::ResponseError(e))
-            } else {
-              Err(HttpError::Unknown)
+        let status_code = resp.status();
+        if status_code.is_server_error() {
+          Err(HttpError::ResponseError(
+            resp.error_for_status().unwrap_err(),
+          ))
+        } else {
+          match status_code {
+            StatusCode::BAD_REQUEST => Err(HttpError::APIError(APIError::BadRequest)),
+            StatusCode::FORBIDDEN => Err(HttpError::APIError(APIError::Forbidden)),
+            StatusCode::NOT_FOUND => Err(HttpError::APIError(APIError::NotFound)),
+            StatusCode::TOO_MANY_REQUESTS => Err(HttpError::APIError(APIError::TooManyRequests)),
+            _ => {
+              let r = resp.json::<T>();
+              match r {
+                Ok(r) => Ok(r),
+                Err(e) => {
+                  if e.is_decode() {
+                    Err(HttpError::ResponseError(e))
+                  } else {
+                    Err(HttpError::Unknown)
+                  }
+                }
+              }
             }
           }
         }
