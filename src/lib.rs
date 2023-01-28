@@ -100,6 +100,7 @@ impl EskomAPIAsync {
   }
 
   /// Creates new instance of Eskom API using token as a env variable.
+  /// Uses the [dotenv](https://crates.io/crates/dotenv) crate so it will load .env files if available.
   /// `Note`: The default variable name is `ESKOMSEPUSH_API_KEY` if var_name is set to `None`.
   /// `Note`: It will panic the env variable doesn't exist.
   pub fn new_with_env(var_name: Option<&str>) -> Self {
@@ -257,6 +258,7 @@ impl EskomAPI {
   }
 
   /// Creates new instance of Eskom API using token as a env variable.
+  /// Uses the [dotenv](https://crates.io/crates/dotenv) crate so it will load .env files if available.
   /// `Note`: The default variable name is `ESKOMSEPUSH_API_KEY` if var_name is set to `None`.
   /// `Note`: It will panic the env variable doesn't exist.
   pub fn new_with_env(var_name: Option<&str>) -> Self {
