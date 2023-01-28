@@ -201,14 +201,29 @@ impl EskomAPIAsync {
   ) -> Result<T, HttpError> {
     match response {
       Ok(resp) => {
-        let r = resp.json::<T>().await;
-        match r {
-          Ok(r) => Ok(r),
-          Err(e) => {
-            if e.is_decode() {
-              Err(HttpError::ResponseError(e))
-            } else {
-              Err(HttpError::Unknown)
+        let status_code = resp.status();
+        if status_code.is_server_error() {
+          Err(HttpError::ResponseError(
+            resp.error_for_status().unwrap_err(),
+          ))
+        } else {
+          match status_code {
+            StatusCode::BAD_REQUEST => Err(HttpError::APIError(APIError::BadRequest)),
+            StatusCode::FORBIDDEN => Err(HttpError::APIError(APIError::Forbidden)),
+            StatusCode::NOT_FOUND => Err(HttpError::APIError(APIError::NotFound)),
+            StatusCode::TOO_MANY_REQUESTS => Err(HttpError::APIError(APIError::TooManyRequests)),
+            _ => {
+              let r = resp.json::<T>().await;
+              match r {
+                Ok(r) => Ok(r),
+                Err(e) => {
+                  if e.is_decode() {
+                    Err(HttpError::ResponseError(e))
+                  } else {
+                    Err(HttpError::Unknown)
+                  }
+                }
+              }
             }
           }
         }
