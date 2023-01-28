@@ -2,7 +2,7 @@ use allowance::AllowanceCheck;
 use area_info::AreaInfo;
 use area_nearby::AreaNearby;
 use area_search::AreaSearch;
-use dotenv;
+
 use reqwest::{Response, StatusCode};
 use serde::de::DeserializeOwned;
 use status::EskomStatus;
@@ -128,7 +128,7 @@ impl EskomAPIAsync {
   /// Other keys in the `status` refer to different municipalities and potential overrides from the National status; most typically present is the key for `capetown`
   pub async fn status_async(&self) -> Result<EskomStatus, HttpError> {
     let t = self.client.get(Endpoints::Status.to_string()).send().await;
-    return self.handle_response_async::<EskomStatus>(t).await;
+    self.handle_response_async::<EskomStatus>(t).await
   }
 
   /// Obtain the `id` from Area Find or Area Search and use with this request. This single request has everything you need to monitor upcoming loadshedding events for the chosen suburb.
@@ -139,7 +139,7 @@ impl EskomAPIAsync {
       .query(&[("id", id)])
       .send()
       .await;
-    return self.handle_response_async::<AreaInfo>(t).await;
+    self.handle_response_async::<AreaInfo>(t).await
   }
 
   /// Find areas based on GPS coordinates (latitude and longitude).
@@ -155,7 +155,7 @@ impl EskomAPIAsync {
       .query(&[("lat", lat.to_string()), ("lon", long.to_string())])
       .send()
       .await;
-    return self.handle_response_async::<AreaNearby>(t).await;
+    self.handle_response_async::<AreaNearby>(t).await
   }
 
   /// Search area based on text
@@ -166,7 +166,7 @@ impl EskomAPIAsync {
       .query(&[("text", search_term)])
       .send()
       .await;
-    return self.handle_response_async::<AreaSearch>(t).await;
+    self.handle_response_async::<AreaSearch>(t).await
   }
 
   /// Find topics created by users based on GPS coordinates (latitude and longitude). Can use this to detect if there is a potential outage/problem nearby
@@ -181,7 +181,7 @@ impl EskomAPIAsync {
       .query(&[("lat", lat.to_string()), ("lon", long.to_string())])
       .send()
       .await;
-    return self.handle_response_async::<TopicsNearby>(t).await;
+    self.handle_response_async::<TopicsNearby>(t).await
   }
 
   /// Check allowance allocated for token
@@ -192,14 +192,14 @@ impl EskomAPIAsync {
       .get(Endpoints::CheckAllowace.to_string())
       .send()
       .await;
-    return self.handle_response_async::<AllowanceCheck>(t).await;
+    self.handle_response_async::<AllowanceCheck>(t).await
   }
 
   async fn handle_response_async<T: DeserializeOwned>(
     &self,
     response: Result<Response, reqwest::Error>,
   ) -> Result<T, HttpError> {
-    return match response {
+    match response {
       Ok(resp) => {
         let r = resp.json::<T>().await;
         match r {
@@ -222,7 +222,7 @@ impl EskomAPIAsync {
           Err(HttpError::NoInternet)
         }
       }
-    };
+    }
   }
 }
 
@@ -270,7 +270,7 @@ impl EskomAPI {
   /// Other keys in the `status` refer to different municipalities and potential overrides from the National status; most typically present is the key for `capetown`
   pub fn status(&self) -> Result<EskomStatus, HttpError> {
     let t = self.client.get(Endpoints::Status.to_string()).send();
-    return self.handle_response::<EskomStatus>(t);
+    self.handle_response::<EskomStatus>(t)
   }
 
   /// Obtain the `id` from Area Find or Area Search and use with this request. This single request has everything you need to monitor upcoming loadshedding events for the chosen suburb.
@@ -280,7 +280,7 @@ impl EskomAPI {
       .get(Endpoints::AreaInfo.to_string())
       .query(&[("id", id)])
       .send();
-    return self.handle_response::<AreaInfo>(t);
+    self.handle_response::<AreaInfo>(t)
   }
 
   /// Find areas based on GPS coordinates (latitude and longitude).
@@ -295,7 +295,7 @@ impl EskomAPI {
       .get(Endpoints::AreasNearby.to_string())
       .query(&[("lat", lat.to_string()), ("lon", long.to_string())])
       .send();
-    return self.handle_response::<AreaNearby>(t);
+    self.handle_response::<AreaNearby>(t)
   }
 
   /// Search area based on text
@@ -305,7 +305,7 @@ impl EskomAPI {
       .get(Endpoints::AreasSearch.to_string())
       .query(&[("text", search_term)])
       .send();
-    return self.handle_response::<AreaSearch>(t);
+    self.handle_response::<AreaSearch>(t)
   }
 
   /// Find topics created by users based on GPS coordinates (latitude and longitude). Can use this to detect if there is a potential outage/problem nearby
@@ -319,21 +319,21 @@ impl EskomAPI {
       .get(Endpoints::TopicsNearby.to_string())
       .query(&[("lat", lat.to_string()), ("lon", long.to_string())])
       .send();
-    return self.handle_response::<TopicsNearby>(t);
+    self.handle_response::<TopicsNearby>(t)
   }
 
   /// Check allowance allocated for token
   /// `NOTE`: This call doesn't count towards your quota.
   pub fn check_allowance(&self) -> Result<AllowanceCheck, HttpError> {
     let t = self.client.get(Endpoints::CheckAllowace.to_string()).send();
-    return self.handle_response::<AllowanceCheck>(t);
+    self.handle_response::<AllowanceCheck>(t)
   }
 
   fn handle_response<T: DeserializeOwned>(
     &self,
     response: Result<reqwest::blocking::Response, reqwest::Error>,
   ) -> Result<T, HttpError> {
-    return match response {
+    match response {
       Ok(resp) => {
         let status_code = resp.status();
         if status_code.is_server_error() {
@@ -371,7 +371,7 @@ impl EskomAPI {
           Err(HttpError::NoInternet)
         }
       }
-    };
+    }
   }
 }
 
