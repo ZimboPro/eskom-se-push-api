@@ -99,27 +99,27 @@ impl EskomAPIAsync {
     }
   }
 
-    /// Creates new instance of Eskom API using token as a env variable.
+  /// Creates new instance of Eskom API using token as a env variable.
   /// `Note`: The default variable name is `ESKOMSEPUSH_API_KEY` if var_name is set to `None`.
   /// `Note`: It will panic the env variable doesn't exist.
   pub fn new_with_env(var_name: Option<&str>) -> Self {
     dotenv::dotenv().ok();
     let key = var_name.unwrap_or("ESKOMSEPUSH_API_KEY");
     match std::env::var(key) {
-        Ok(val) => {
-          let mut headers = reqwest::header::HeaderMap::new();
-    headers.insert(
-      "token",
-      reqwest::header::HeaderValue::from_str(&val).unwrap(),
-    );
-    EskomAPIAsync {
-      client: reqwest::Client::builder()
-        .default_headers(headers)
-        .build()
-        .unwrap(),
-    }
-        },
-        Err(_) => panic!("Environment variable: {} doesn't exist", key),
+      Ok(val) => {
+        let mut headers = reqwest::header::HeaderMap::new();
+        headers.insert(
+          "token",
+          reqwest::header::HeaderValue::from_str(&val).unwrap(),
+        );
+        EskomAPIAsync {
+          client: reqwest::Client::builder()
+            .default_headers(headers)
+            .build()
+            .unwrap(),
+        }
+      }
+      Err(_) => panic!("Environment variable: {} doesn't exist", key),
     }
   }
 
@@ -248,20 +248,20 @@ impl EskomAPI {
     dotenv::dotenv().ok();
     let key = var_name.unwrap_or("ESKOMSEPUSH_API_KEY");
     match std::env::var(key) {
-        Ok(val) => {
-          let mut headers = reqwest::header::HeaderMap::new();
-    headers.insert(
-      "token",
-      reqwest::header::HeaderValue::from_str(&val).unwrap(),
-    );
-    EskomAPI {
-      client: reqwest::blocking::Client::builder()
-        .default_headers(headers)
-        .build()
-        .unwrap(),
-    }
-        },
-        Err(_) => panic!("Environment variable: {} doesn't exist", key),
+      Ok(val) => {
+        let mut headers = reqwest::header::HeaderMap::new();
+        headers.insert(
+          "token",
+          reqwest::header::HeaderValue::from_str(&val).unwrap(),
+        );
+        EskomAPI {
+          client: reqwest::blocking::Client::builder()
+            .default_headers(headers)
+            .build()
+            .unwrap(),
+        }
+      }
+      Err(_) => panic!("Environment variable: {} doesn't exist", key),
     }
   }
 
