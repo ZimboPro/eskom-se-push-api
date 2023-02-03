@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use chrono::DateTime;
+use chrono::Utc;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -40,10 +42,10 @@ pub struct LoadsheddingStatus {
   pub stage_updated: String,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NextStage {
   pub stage: String,
   #[serde(rename = "stage_start_timestamp")]
-  pub stage_start_timestamp: String,
+  pub stage_start_timestamp: DateTime<Utc>,
 }

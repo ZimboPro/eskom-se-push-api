@@ -12,3 +12,4 @@ This Rust library is an unofficial library to the [EskomSePush](https://sepush.c
 - [ ] Features to control sync and async functionality
 - [ ] Add unit tests
 - [x] Improve status struct to allow for more flexible structure for future proofing (Towns/cities with different loadshedding schedule might be added in the future)
+- [ ] Add helper functions
