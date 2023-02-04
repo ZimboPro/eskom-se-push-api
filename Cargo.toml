@@ -7,7 +7,7 @@ description = "API Bindings to the Eskom-se-Push API"
 homepage = "https://github.com/ZimboPro/eskom-se-push-api"
 readme = "README.md"
 categories = ["api-bindings"]
-keywords = ["eskom", "eskom-se-push", "eskom se push"]
+keywords = ["eskom", "eskom-se-push", "se-push"]
 license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
