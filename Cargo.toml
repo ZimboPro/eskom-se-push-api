@@ -23,3 +23,6 @@ thiserror = "1.0.32"
 default=["sync"]
 async=[]
 sync=[]
+
+[package.metadata.docs.rs]
+all-features = true
