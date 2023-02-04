@@ -76,12 +76,24 @@
 //!   }
 //! }
 //! ```
+//! 
+//! ## Features
+//! 
+//! There are currently 2 features
+//! 
+//! `async`: Allows for async API calls
+//! `sync`: Allows for sync API calls
+//! 
+//! `sync` is enabled by default.
 
 use allowance::AllowanceCheck;
 use area_info::AreaInfo;
 use area_nearby::AreaNearby;
 use area_search::AreaSearch;
 
+#[cfg(feature = "sync")]
+use reqwest::StatusCode;
+#[cfg(feature = "async")]
 use reqwest::{Response, StatusCode};
 use serde::de::DeserializeOwned;
 use status::EskomStatus;
