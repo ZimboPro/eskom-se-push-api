@@ -4,8 +4,8 @@ This Rust library is an unofficial library to the [EskomSePush](https://sepush.c
 
 ## TODO
 
-- [ ] Improve docs
-- [ ] Add enum types where relevant
+- [x] Improve docs
+- [x] Add enum types where relevant
 - [x] Improve error types
 - [x] Add examples
 - [x] Allow option for getting API key from environment variables
