@@ -13,6 +13,7 @@ This Rust library is an unofficial library to the [EskomSePush](https://sepush.c
 - [ ] Add unit tests
 - [x] Improve status struct to allow for more flexible structure for future proofing (Towns/cities with different loadshedding schedule might be added in the future)
 - [x] Add helper functions
+- [ ] Restucture code based on this article by Gitlab crate maintainers [Designing Rust bindings for REST APIs](https://plume.benboeckel.net/~/JustAnotherBlog/designing-rust-bindings-for-rest-ap-is)
 
 ## Contributions
 

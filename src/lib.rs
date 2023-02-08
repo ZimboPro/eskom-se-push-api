@@ -106,6 +106,7 @@ pub mod area_nearby;
 pub mod area_search;
 pub mod status;
 pub mod topics_nearby;
+mod traits;
 
 #[cfg(feature = "async")]
 pub struct EskomAPIAsync {
