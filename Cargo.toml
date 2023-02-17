@@ -26,7 +26,7 @@ ureq = { version = "2.6.2", features = ["gzip", "json"], optional = true }
 url = "2.3.1"
 
 [features]
-default=["sync", "async", "ureq", "reqwest"]
+default=[]
 async=["async-trait"]
 sync=[]
 ureq=["dep:ureq"]
@@ -34,3 +34,21 @@ reqwest=["dep:reqwest"]
 
 [package.metadata.docs.rs]
 all-features = true
+
+[[example]]
+name = "normal"
+path = "examples/normal.rs"
+features=["ureq"]
+
+[[example]]
+name = "normal_reqwest"
+path = "examples/normal.rs"
+features=["sync", "reqwest"]
+
+[[example]]
+name = "get_status"
+path = "examples/get_status.rs"
+features=["ureq"]
+
+
+

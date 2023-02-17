@@ -1,4 +1,3 @@
-
 #[derive(thiserror::Error, Debug)]
 pub enum HttpError {
   #[error("API Error: {0}")]
@@ -10,21 +9,21 @@ pub enum HttpError {
   #[error("UnknownError")]
   Unknown,
   #[error("Response Error: {0}")]
+  #[cfg(any(feature= "reqwest", doc))]
   ResponseError(#[from] reqwest::Error),
-  #[cfg(feature = "ureq")]
+  #[cfg(any(feature = "ureq", doc))]
   #[error("Response Error: {0}")]
   UreqResponseError(String),
   #[error("Search text not set")]
   SearchTextNotSet,
   #[error("Area ID not set")]
   AreaIdNotSet,
-  #[error("Longitude and/or latitude has not been set: Long: {longitude:?} latitude: {latitude:?}")]
-  LongitudeOrLatitudeNotSet {
-    longitude: Option<f32>,
-    latitude: Option<f32>
-  },
+  #[error(
+    "Longitude and/or latitude has not been set: Long: {longitude:?} latitude: {latitude:?}"
+  )]
+  LongitudeOrLatitudeNotSet { longitude: f32, latitude: f32 },
   #[error("Unknown error: {0}")]
-  UnknownError(String)
+  UnknownError(String),
 }
 
 #[derive(thiserror::Error, Debug)]

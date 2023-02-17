@@ -1,8 +1,9 @@
-//! A blocking client using the `ureq` http client.
+//! A blocking client using the `reqwest` http client.
 //! 
 //! # Optional
-//! Requires the `ureq` feature to be enabled
+//! Requires the `reqwest` and `sync` features to be enabled
 
+use http::header;
 use serde::de::DeserializeOwned;
 
 use crate::{
@@ -10,21 +11,33 @@ use crate::{
   area_info::{AreaInfo, AreaInfoURLBuilder},
   area_nearby::{AreaNearby, AreasNearbyURLBuilder},
   area_search::{AreaSearch, AreaSearchURLBuilder},
-  errors::{APIError, HttpError},
+  constants::TOKEN_KEY,
+  errors::{HttpError},
   status::{EskomStatus, EskomStatusUrl},
   topics_nearby::{TopicsNearby, TopicsNearbyUrlBuilder},
   Endpoint, get_token_from_env,
 };
 
-pub struct UreqClient {
-  token: String,
+pub struct ReqwestBlockingCLient {
+  client: reqwest::blocking::Client,
 }
 
-impl UreqClient {
-  /// Create new client using the `ureq` Http client
+impl ReqwestBlockingCLient {
+  /// Create new client using the `reqwest::blocking` Http client
   /// `token` is the Eskom API token
   pub fn new(token: String) -> Self {
-    UreqClient { token }
+    let mut headers = header::HeaderMap::new();
+    headers.insert(
+      TOKEN_KEY,
+      header::HeaderValue::from_str(token.as_str()).unwrap(),
+    );
+
+    ReqwestBlockingCLient {
+      client: reqwest::blocking::ClientBuilder::new()
+        .default_headers(headers)
+        .build()
+        .unwrap(),
+    }
   }
 
   /// Creates new instance of Eskom API using token as a env variable.
@@ -33,7 +46,20 @@ impl UreqClient {
   /// `Note`: It will panic the env variable doesn't exist.
   pub fn new_with_env(var_name: Option<&str>) -> Self {
     match get_token_from_env(var_name) {
-      Ok(val) => UreqClient { token: val },
+      Ok(val) => {
+        let mut headers = header::HeaderMap::new();
+        headers.insert(
+          TOKEN_KEY,
+          header::HeaderValue::from_str(val.as_str()).unwrap(),
+        );
+
+        ReqwestBlockingCLient {
+          client: reqwest::blocking::ClientBuilder::new()
+            .default_headers(headers)
+            .build()
+            .unwrap(),
+        }
+      }
       Err(e) => panic!("Error: {}", e),
     }
   }
@@ -43,7 +69,7 @@ impl UreqClient {
   /// Other keys in the `status` refer to different municipalities and potential overrides from the National status; most typically present is the key for `capetown`
   pub fn get_load_shedding_status(&self) -> Result<EskomStatus, HttpError> {
     let c = EskomStatusUrl::default();
-    c.ureq(&self.token)
+    c.reqwest_client(&self.client)
   }
 
   /// Obtain the `area_id` from Area Find or Area Search and use with this request. This single request has everything you need to monitor upcoming loadshedding events for the chosen suburb.
@@ -52,7 +78,7 @@ impl UreqClient {
       .area_id(area_id.to_owned())
       .build()
       .map_err(|_| HttpError::AreaIdNotSet)?;
-    t.ureq(&self.token)
+    t.reqwest_client(&self.client)
   }
 
   /// Find areas based on GPS coordinates (latitude and longitude).
@@ -66,7 +92,7 @@ impl UreqClient {
         longitude: lat,
         latitude: long,
       })?;
-    t.ureq(&self.token)
+    t.reqwest_client(&self.client)
   }
 
   /// Search area based on text
@@ -75,7 +101,7 @@ impl UreqClient {
       .search_term(search_term)
       .build()
       .map_err(|_| HttpError::SearchTextNotSet)?;
-    t.ureq(&self.token)
+    t.reqwest_client(&self.client)
   }
 
   /// Find topics created by users based on GPS coordinates (latitude and longitude). Can use this to detect if there is a potential outage/problem nearby
@@ -88,49 +114,77 @@ impl UreqClient {
         longitude: lat,
         latitude: long,
       })?;
-    t.ureq(&self.token)
+    t.reqwest_client(&self.client)
   }
 
   /// Check allowance allocated for token
   /// `NOTE`: This call doesn't count towards your quota.
   pub fn check_allowance(&self) -> Result<AllowanceCheck, HttpError> {
     let t = AllowanceCheckURL::default();
-    t.ureq(&self.token)
+    t.reqwest_client(&self.client)
   }
 }
 
-/// A response handler for `ureq` to map the response to the given structure or relevant error
+
+/// A response handler for `reqwest::blocking` to map the response to the given structure or relevant error
 /// ```rust
 /// let statusUrl = EskomStatusUrlBuilder::default().build().unwrap();
 ///
-/// let api_response  = ureq::get(statusUrl.url().unwrap().as_str()).set(TOKEN_KEY, "YOUR-TOKEN").call();
+/// let mut headers = header::HeaderMap::new();
+/// headers.insert(TOKEN_KEY, header::HeaderValue::from_str(token).unwrap());
+/// let client = reqwest::blocking::ClientBuilder::new().
+///   default_headers(headers).build().unwrap();
+///
+/// let api_response = client.get(url_endpoint.as_str()).send();
 /// let response = handle_ureq_response::<EskomStatus>(api_response);
 /// ```
 /// `response` is the ureq API response
 /// NOTE
-/// Requires the `ureq` feature to be enabled
-pub fn handle_ureq_response<T: DeserializeOwned>(
-  response: Result<ureq::Response, ureq::Error>,
+/// Requires the `reqwest` and `sync` features to be enabled
+pub fn handle_reqwest_response_blocking<T: DeserializeOwned>(
+  response: Result<reqwest::blocking::Response, reqwest::Error>,
 ) -> Result<T, HttpError> {
+    use http::StatusCode;
+
+    use crate::errors::APIError;
+
   match response {
     Ok(resp) => {
-      resp
-      .into_json::<T>()
-      .map_err(|e| HttpError::UnknownError(e.to_string()))
-    },
-    Err(ureq::Error::Status(code, response)) => match code {
-      400 => Err(HttpError::APIError(APIError::BadRequest)),
-      403 => Err(HttpError::APIError(APIError::Forbidden)),
-      404 => Err(HttpError::APIError(APIError::NotFound)),
-      429 => Err(HttpError::APIError(APIError::TooManyRequests)),
-      500..=509 => Err(HttpError::APIError(APIError::ServerError(
-        response.into_string().unwrap(),
-      ))),
-      a => {
-        println!("AAA {}", a);
-        Err(HttpError::Unknown)
-      },
-    },
-    Err(_) => Err(HttpError::NoInternet),
+      let status_code = resp.status();
+      if status_code.is_server_error() {
+        Err(HttpError::ResponseError(
+          resp.error_for_status().unwrap_err(),
+        ))
+      } else {
+        match status_code {
+          StatusCode::BAD_REQUEST => Err(HttpError::APIError(APIError::BadRequest)),
+          StatusCode::FORBIDDEN => Err(HttpError::APIError(APIError::Forbidden)),
+          StatusCode::NOT_FOUND => Err(HttpError::APIError(APIError::NotFound)),
+          StatusCode::TOO_MANY_REQUESTS => Err(HttpError::APIError(APIError::TooManyRequests)),
+          _ => {
+            let r = resp.json::<T>();
+            match r {
+              Ok(r) => Ok(r),
+              Err(e) => {
+                if e.is_decode() {
+                  Err(HttpError::ResponseError(e))
+                } else {
+                  Err(HttpError::Unknown)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    Err(err) => {
+      if err.is_timeout() {
+        Err(HttpError::Timeout)
+      } else if err.is_status() {
+        Err(HttpError::ResponseError(err))
+      } else {
+        Err(HttpError::NoInternet)
+      }
+    }
   }
 }

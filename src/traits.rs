@@ -1,174 +1,113 @@
-use std::{borrow::Cow, error::Error};
+use std::borrow::Cow;
 
+#[cfg(any(feature = "async", doc))]
 use async_trait::async_trait;
+#[cfg(any(feature = "reqwest", doc))]
 use http::StatusCode;
-use reqwest::Url;
 use serde::de::DeserializeOwned;
 
-use crate::errors::{HttpError, APIError};
+#[cfg(any(feature = "ureq", doc))]
+use crate::ureq_client::handle_ureq_response;
 
+use crate::errors::{APIError, HttpError};
 
 pub trait Endpoint {
-    type Output: DeserializeOwned;
-    fn method(&self) -> &str {
-        "GET"
-    }
+  type Output: DeserializeOwned;
 
-    fn endpoint(&self) -> Cow<'static, str>;
+  /// Returns the method required for this endpoint `NOTE` Default is GET
+  fn method(&self) -> &str {
+    "GET"
+  }
 
-    fn url(&self) -> Result<Url, HttpError>;
+  /// Returns the endpoint Url BUT it won't have any queries attached to it
+  fn endpoint(&self) -> Cow<'static, str>;
 
-    #[cfg(feature = "ureq")]
-    fn ureq_client(&self, client: &ureq::Agent) -> Result<Self::Output, HttpError> {
-        let url_endpoint = self.url()?;
-        handle_ureq_response(client.request(self.method(), url_endpoint.as_str()).call())
-    }
+  /// Returns the built URL for this endpoint
+  fn url(&self) -> Result<url::Url, HttpError> {
+    Ok(url::Url::parse(&self.endpoint()).unwrap())
+  }
 
-    #[cfg(feature = "ureq")]
-    fn ureq(&self) -> Result<Self::Output, HttpError> {
-        let url_endpoint = self.url()?;
-        handle_ureq_response(ureq::request(self.method(), url_endpoint.as_str()).call())
-    }
+  #[cfg(any(feature = "ureq", doc))]
+  /// Uses a `ureq` client to make the API call and handle the response.
+  /// The assumption is made that the token is part of the default headers
+  /// Requires the `ureq` feature to be enabled
+  fn ureq_client(&self, client: &ureq::Agent) -> Result<Self::Output, HttpError> {
+    let url_endpoint = self.url()?;
+    handle_ureq_response(client.request(self.method(), url_endpoint.as_str()).call())
+  }
 
-    #[cfg(all(feature = "reqwest", feature = "sync"))]
-    fn reqwest_client(&self, client: &reqwest::blocking::Client) -> Result<Self::Output, HttpError> {
-        let url_endpoint = self.url()?;
-        handle_reqwest_response_blocking::<Self::Output>(client.get(url_endpoint.as_str()).send())
-    }
+  #[cfg(any(feature = "ureq", doc))]
+  /// Creates a `ureq` client to make the API call and handle the response
+  /// Requires the `ureq` feature to be enabled
+  fn ureq(&self, token: &str) -> Result<Self::Output, HttpError> {
+    use crate::constants::TOKEN_KEY;
 
-    #[cfg(all(feature = "reqwest", feature = "sync"))]
-    fn reqwest(&self) -> Result<Self::Output, HttpError> {
-        let url_endpoint = self.url()?;
-        handle_reqwest_response_blocking::<Self::Output>(reqwest::blocking::get(url_endpoint.as_str()))
-    }
+    let url_endpoint = self.url()?;
+    handle_ureq_response(
+      ureq::request(self.method(), url_endpoint.as_str())
+        .set(TOKEN_KEY, token)
+        .call(),
+    )
+  }
 
-    
+  #[cfg(any(all(feature = "reqwest", feature = "sync"), doc))]
+  /// Uses a `reqwest::blocking` client to make the API call and handle the response.
+  /// The assumption is made that the token is part of the default headers
+  /// Requires the `reqwest` and `sync` features to be enabled
+  fn reqwest_client(&self, client: &reqwest::blocking::Client) -> Result<Self::Output, HttpError> {
+    let url_endpoint = self.url()?;
+    crate::reqwest_blocking_client::handle_reqwest_response_blocking::<Self::Output>(client.get(url_endpoint.as_str()).send())
+  }
+
+  #[cfg(any(all(feature = "reqwest", feature = "sync"), doc))]
+  /// Creates a `reqwest::blocking` client to make the API call and handle the response
+  /// Requires the `reqwest` and `sync` features to be enabled
+  fn reqwest(&self, token: &str) -> Result<Self::Output, HttpError> {
+    use http::header;
+
+    use crate::constants::TOKEN_KEY;
+
+    let url_endpoint = self.url()?;
+    let mut headers = header::HeaderMap::new();
+    headers.insert(TOKEN_KEY, header::HeaderValue::from_str(token).unwrap());
+    let client = reqwest::blocking::ClientBuilder::new()
+      .default_headers(headers)
+      .build()
+      .unwrap();
+    crate::reqwest_blocking_client::handle_reqwest_response_blocking::<Self::Output>(client.get(url_endpoint.as_str()).send())
+  }
 }
 
-#[cfg(all(feature = "reqwest", feature = "async"))]
+#[cfg(any(all(feature = "reqwest", feature = "async"), doc))]
 #[async_trait]
-pub trait EndpointAsync {
-    #[cfg(all(feature = "reqwest", feature = "async"))]
-    async fn reqwest_client_async(&self, client: &reqwest::Client) -> Result<Self::Output, HttpError> {
-        let url_endpoint = self.url()?;
-        handle_reqwest_response::<Self::Output>(client.get(url_endpoint.as_str()).send().await).await
-    }
-
-    #[cfg(all(feature = "reqwest", feature = "async"))]
-    async fn reqwest_async(&self) -> Result<Self::Output, HttpError> {
-        let url_endpoint = self.url()?;
-        handle_reqwest_response::<Self::Output>(reqwest::get(url_endpoint.as_str()).await).await
-    }
-}
-
-#[cfg(feature = "ureq")]
-fn handle_ureq_response<T: DeserializeOwned>(response: Result<ureq::Response, ureq::Error>) -> Result<T, HttpError> {
-    match response {
-        Ok(response) => {
-            response.into_json::<T>().map_err(|e| HttpError::UnknownError(e.to_string()))
-        },
-        Err(ureq::Error::Status(code, response)) => {
-            match code {
-                400 => Err(HttpError::APIError(APIError::BadRequest)),
-                403 => Err(HttpError::APIError(APIError::Forbidden)),
-                404 => Err(HttpError::APIError(APIError::NotFound)),
-                429 => Err(HttpError::APIError(APIError::TooManyRequests)),
-                500..=509 => Err(HttpError::APIError(APIError::ServerError(response.into_string().unwrap()))),
-                _ => Err(HttpError::Unknown)
-            }
-        },
-        Err(_) => { Err(HttpError::NoInternet) }
-    }
-}
-
-#[cfg(all(feature = "reqwest", feature = "sync"))]
-fn handle_reqwest_response_blocking<T: DeserializeOwned>(response: Result<reqwest::blocking::Response, reqwest::Error>) -> Result<T, HttpError> {
-    match response {
-      Ok(resp) => {
-        let status_code = resp.status();
-        if status_code.is_server_error() {
-          Err(HttpError::ResponseError(
-            resp.error_for_status().unwrap_err(),
-          ))
-        } else {
-          match status_code {
-            StatusCode::BAD_REQUEST => Err(HttpError::APIError(APIError::BadRequest)),
-            StatusCode::FORBIDDEN => Err(HttpError::APIError(APIError::Forbidden)),
-            StatusCode::NOT_FOUND => Err(HttpError::APIError(APIError::NotFound)),
-            StatusCode::TOO_MANY_REQUESTS => Err(HttpError::APIError(APIError::TooManyRequests)),
-            _ => {
-              let r = resp.json::<T>();
-              match r {
-                Ok(r) => Ok(r),
-                Err(e) => {
-                  if e.is_decode() {
-                    Err(HttpError::ResponseError(e))
-                  } else {
-                    Err(HttpError::Unknown)
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      Err(err) => {
-        if err.is_timeout() {
-          Err(HttpError::Timeout)
-        } else if err.is_status() {
-          Err(HttpError::ResponseError(err))
-        } else {
-          Err(HttpError::NoInternet)
-        }
-      }
-    }
+pub trait EndpointAsync: Endpoint {
+  #[cfg(any(all(feature = "reqwest", feature = "async"), doc))]
+  /// Uses an async `reqwest` client to make the API call and handle the response.
+  /// The assumption is made that the token is part of the default headers
+  /// Requires the `reqwest` and `async` features to be enabled
+  async fn reqwest_client_async(
+    &self,
+    client: &reqwest::Client,
+  ) -> Result<Self::Output, HttpError> {
+    let url_endpoint = self.url()?;
+    crate::reqwest_async_client::handle_reqwest_response:: <Self::Output>(client.get(url_endpoint.as_str()).send().await).await
   }
 
-#[cfg(all(feature = "reqwest", feature = "async"))]
-async fn handle_reqwest_response<T: DeserializeOwned>(response: Result<reqwest::Response, reqwest::Error>) -> Result<T, HttpError> {
-    match response {
-      Ok(resp) => {
-        let status_code = resp.status();
-        if status_code.is_server_error() {
-          Err(HttpError::ResponseError(
-            resp.error_for_status().unwrap_err(),
-          ))
-        } else {
-          match status_code {
-            StatusCode::BAD_REQUEST => Err(HttpError::APIError(APIError::BadRequest)),
-            StatusCode::FORBIDDEN => Err(HttpError::APIError(APIError::Forbidden)),
-            StatusCode::NOT_FOUND => Err(HttpError::APIError(APIError::NotFound)),
-            StatusCode::TOO_MANY_REQUESTS => Err(HttpError::APIError(APIError::TooManyRequests)),
-            _ => {
-              let r = resp.json::<T>().await;
-              match r {
-                Ok(r) => Ok(r),
-                Err(e) => {
-                  if e.is_decode() {
-                    Err(HttpError::ResponseError(e))
-                  } else {
-                    Err(HttpError::Unknown)
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      Err(err) => {
-        if err.is_timeout() {
-          Err(HttpError::Timeout)
-        } else if err.is_status() {
-          Err(HttpError::ResponseError(err))
-        } else {
-          Err(HttpError::NoInternet)
-        }
-      }
-    }
+  #[cfg(any(all(feature = "reqwest", feature = "async"), doc))]
+  /// Creates an async `reqwest` client to make the API call and handle the response
+  /// Requires the `reqwest` and `async` features to be enabled
+  async fn reqwest_async(&self, token: &str) -> Result<Self::Output, HttpError> {
+    let url_endpoint = self.url()?;
+
+    let mut headers = http::header::HeaderMap::new();
+    headers.insert(
+      crate::constants::TOKEN_KEY,
+      http::header::HeaderValue::from_str(token).unwrap(),
+    );
+    let client = reqwest::ClientBuilder::new()
+      .default_headers(headers)
+      .build()
+      .unwrap();
+    crate::reqwest_async_client::handle_reqwest_response:: <Self::Output>(client.get(url_endpoint.as_str()).send().await).await
   }
-
-trait Client {
-    type Error: Error + Send + Sync + 'static;
-    fn rest_endpoint(&self, endpoint: &str) -> Result<Url, HttpError>;
 }
-
