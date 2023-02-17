@@ -12,21 +12,25 @@ license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-trait = "0.1.64"
+async-trait = { version = "0.1.64", optional = true }
 bytes = "1.4.0"
 chrono = { version = "0.4.23", features =["serde"] }
+derive_builder = "0.12.0"
 dotenv = "0.15.0"
 http = "0.2.8"
-reqwest = { version = "0.11.13", features = ["blocking", "json"] }
+reqwest = { version = "0.11.13", features = ["blocking", "json"], optional = true }
 serde = { version = "1.0.152", features = ["derive"] }
 serde_json = "1.0.91"
 thiserror = "1.0.32"
+ureq = { version = "2.6.2", features = ["gzip", "json"], optional = true }
 url = "2.3.1"
 
 [features]
-default=["sync"]
-async=[]
+default=["sync", "async", "ureq", "reqwest"]
+async=["async-trait"]
 sync=[]
+ureq=["dep:ureq"]
+reqwest=["dep:reqwest"]
 
 [package.metadata.docs.rs]
 all-features = true

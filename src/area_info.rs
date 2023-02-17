@@ -1,5 +1,34 @@
+use derive_builder::Builder;
+use reqwest::Url;
 use serde::Deserialize;
 use serde::Serialize;
+
+use crate::errors::HttpError;
+use crate::traits::Endpoint;
+
+#[derive(Default, Builder, Debug)]
+#[builder(setter(into))]
+pub struct AreaInfoURL {
+  area_id: String,
+}
+
+impl Endpoint for AreaInfoURL {
+    type Output = AreaInfo;
+
+    fn endpoint(&self) -> std::borrow::Cow<'static, str> {
+      std::borrow::Cow::Borrowed("https://developer.sepush.co.za/business/2.0/area")
+    }
+
+    fn url(&self) -> Result<reqwest::Url, crate::errors::HttpError> {
+        let u = Url::parse(&self.endpoint()).unwrap();
+        if self.area_id.is_empty() {
+          Err(HttpError::AreaIdNotSet)
+        } else {
+          u.set_query(Some(format!("id={}", self.area_id).as_str()));
+          Ok(u)
+        }
+    }
+}
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

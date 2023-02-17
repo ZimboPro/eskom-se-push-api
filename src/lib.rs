@@ -91,6 +91,9 @@ use area_info::AreaInfo;
 use area_nearby::AreaNearby;
 use area_search::AreaSearch;
 
+use endpoints::{get_load_shedding_status, get_area_info, get_areas_search, get_areas_nearby, get_topics_search, check_allowance};
+use errors::{HttpError, APIError};
+use http::Method;
 #[cfg(feature = "sync")]
 use reqwest::StatusCode;
 #[cfg(feature = "async")]
@@ -106,43 +109,23 @@ pub mod area_nearby;
 pub mod area_search;
 pub mod status;
 pub mod topics_nearby;
+pub mod endpoints;
 mod traits;
+pub mod errors;
+pub mod ureq_client;
 
 #[cfg(feature = "async")]
 pub struct EskomAPIAsync {
   client: reqwest::Client,
+  token: String
 }
 
 #[cfg(feature = "sync")]
 pub struct EskomAPI {
   client: reqwest::blocking::Client,
+  token: String
 }
 
-#[derive(thiserror::Error, Debug)]
-pub enum HttpError {
-  #[error("API Error: {0}")]
-  APIError(#[from] APIError), //400
-  #[error("Timeout")]
-  Timeout,
-  #[error("No Internet")]
-  NoInternet,
-  #[error("UnknownError")]
-  Unknown,
-  #[error("Response Error: {0}")]
-  ResponseError(#[from] reqwest::Error),
-}
-
-#[derive(thiserror::Error, Debug)]
-pub enum APIError {
-  #[error("Bad Request (You sent something bad)")]
-  BadRequest,
-  #[error("Not Authenticated (Token Invalid / Disabled)")]
-  Forbidden,
-  #[error("Not found")]
-  NotFound,
-  #[error("Too Many Requests (Token quota exceeded)")]
-  TooManyRequests,
-}
 
 enum Endpoints {
   Status,
@@ -177,16 +160,9 @@ impl ToString for Endpoints {
 #[cfg(feature = "async")]
 impl EskomAPIAsync {
   pub fn new(token: &str) -> Self {
-    let mut headers = reqwest::header::HeaderMap::new();
-    headers.insert(
-      "token",
-      reqwest::header::HeaderValue::from_str(token).unwrap(),
-    );
     EskomAPIAsync {
-      client: reqwest::Client::builder()
-        .default_headers(headers)
-        .build()
-        .unwrap(),
+      client: reqwest::Client::new(),
+      token: token.to_string(),
     }
   }
 
@@ -199,16 +175,9 @@ impl EskomAPIAsync {
     let key = var_name.unwrap_or("ESKOMSEPUSH_API_KEY");
     match std::env::var(key) {
       Ok(val) => {
-        let mut headers = reqwest::header::HeaderMap::new();
-        headers.insert(
-          "token",
-          reqwest::header::HeaderValue::from_str(&val).unwrap(),
-        );
         EskomAPIAsync {
-          client: reqwest::Client::builder()
-            .default_headers(headers)
-            .build()
-            .unwrap(),
+          client: reqwest::Client::new(),
+          token: val.to_string(),
         }
       }
       Err(_) => panic!("Environment variable: {} doesn't exist", key),
@@ -219,18 +188,13 @@ impl EskomAPIAsync {
   /// `eskom` is the National status
   /// Other keys in the `status` refer to different municipalities and potential overrides from the National status; most typically present is the key for `capetown`
   pub async fn status_async(&self) -> Result<EskomStatus, HttpError> {
-    let t = self.client.get(Endpoints::Status.to_string()).send().await;
+    let t = self.client.execute(get_load_shedding_status(self.token.as_str())).await;
     self.handle_response_async::<EskomStatus>(t).await
   }
 
   /// Obtain the `id` from Area Find or Area Search and use with this request. This single request has everything you need to monitor upcoming loadshedding events for the chosen suburb.
   pub async fn area_info_async(&self, id: &str) -> Result<AreaInfo, HttpError> {
-    let t = self
-      .client
-      .get(Endpoints::AreaInfo.to_string())
-      .query(&[("id", id)])
-      .send()
-      .await;
+    let t = self.client.execute(get_area_info(self.token.as_str(), id)).await;
     self.handle_response_async::<AreaInfo>(t).await
   }
 
@@ -241,23 +205,13 @@ impl EskomAPIAsync {
     lat: impl ToString,
     long: impl ToString,
   ) -> Result<AreaNearby, HttpError> {
-    let t = self
-      .client
-      .get(Endpoints::AreasNearby.to_string())
-      .query(&[("lat", lat.to_string()), ("lon", long.to_string())])
-      .send()
-      .await;
+    let t = self.client.execute(get_areas_nearby(self.token.as_str(), lat, long)).await;
     self.handle_response_async::<AreaNearby>(t).await
   }
 
   /// Search area based on text
   pub async fn areas_search_async(&self, search_term: &str) -> Result<AreaSearch, HttpError> {
-    let t = self
-      .client
-      .get(Endpoints::AreasSearch.to_string())
-      .query(&[("text", search_term)])
-      .send()
-      .await;
+    let t = self.client.execute(get_areas_search(self.token.as_str(), search_term)).await;
     self.handle_response_async::<AreaSearch>(t).await
   }
 
@@ -267,23 +221,14 @@ impl EskomAPIAsync {
     lat: impl ToString,
     long: impl ToString,
   ) -> Result<TopicsNearby, HttpError> {
-    let t = self
-      .client
-      .get(Endpoints::TopicsNearby.to_string())
-      .query(&[("lat", lat.to_string()), ("lon", long.to_string())])
-      .send()
-      .await;
+    let t = self.client.execute(get_topics_search(self.token.as_str(), lat, long)).await;
     self.handle_response_async::<TopicsNearby>(t).await
   }
 
   /// Check allowance allocated for token
   /// `NOTE`: This call doesn't count towards your quota.
   pub async fn check_allowance_async(&self) -> Result<AllowanceCheck, HttpError> {
-    let t = self
-      .client
-      .get(Endpoints::CheckAllowace.to_string())
-      .send()
-      .await;
+    let t = self.client.execute(check_allowance(self.token.as_str())).await;
     self.handle_response_async::<AllowanceCheck>(t).await
   }
 
@@ -336,16 +281,9 @@ impl EskomAPIAsync {
 #[cfg(feature = "sync")]
 impl EskomAPI {
   pub fn new(token: &str) -> Self {
-    let mut headers = reqwest::header::HeaderMap::new();
-    headers.insert(
-      "token",
-      reqwest::header::HeaderValue::from_str(token).unwrap(),
-    );
     EskomAPI {
-      client: reqwest::blocking::Client::builder()
-        .default_headers(headers)
-        .build()
-        .unwrap(),
+      client: reqwest::blocking::Client::new(),
+      token: token.to_string(),
     }
   }
 
@@ -358,16 +296,9 @@ impl EskomAPI {
     let key = var_name.unwrap_or("ESKOMSEPUSH_API_KEY");
     match std::env::var(key) {
       Ok(val) => {
-        let mut headers = reqwest::header::HeaderMap::new();
-        headers.insert(
-          "token",
-          reqwest::header::HeaderValue::from_str(&val).unwrap(),
-        );
         EskomAPI {
-          client: reqwest::blocking::Client::builder()
-            .default_headers(headers)
-            .build()
-            .unwrap(),
+          client: reqwest::blocking::Client::new(),
+          token: val,
         }
       }
       Err(_) => panic!("Environment variable: {} doesn't exist", key),
@@ -378,42 +309,30 @@ impl EskomAPI {
   /// `eskom` is the National status
   /// Other keys in the `status` refer to different municipalities and potential overrides from the National status; most typically present is the key for `capetown`
   pub fn status(&self) -> Result<EskomStatus, HttpError> {
-    let t = self.client.get(Endpoints::Status.to_string()).send();
+    let t = self.client.execute(get_load_shedding_status(self.token.as_str()));
     self.handle_response::<EskomStatus>(t)
   }
 
   /// Obtain the `id` from Area Find or Area Search and use with this request. This single request has everything you need to monitor upcoming loadshedding events for the chosen suburb.
   pub fn area_info(&self, id: &str) -> Result<AreaInfo, HttpError> {
-    let t = self
-      .client
-      .get(Endpoints::AreaInfo.to_string())
-      .query(&[("id", id)])
-      .send();
+    let t = self.client.request(Method::GET,get_area_info(self.token.as_str(), id)).send();
     self.handle_response::<AreaInfo>(t)
   }
 
   /// Find areas based on GPS coordinates (latitude and longitude).
   /// The first area returned is typically the best choice for the coordinates - as it's closest to the GPS coordinates provided. However it could be that you are in the second or third area.
-  pub fn areas_nearby_async(
+  pub fn areas_nearby(
     &self,
-    lat: impl ToString,
-    long: impl ToString,
+    lat: f32,
+    long: f32,
   ) -> Result<AreaNearby, HttpError> {
-    let t = self
-      .client
-      .get(Endpoints::AreasNearby.to_string())
-      .query(&[("lat", lat.to_string()), ("lon", long.to_string())])
-      .send();
+    let t = self.client.execute(get_areas_nearby(self.token.as_str(), lat, long));
     self.handle_response::<AreaNearby>(t)
   }
 
   /// Search area based on text
   pub fn areas_search(&self, search_term: &str) -> Result<AreaSearch, HttpError> {
-    let t = self
-      .client
-      .get(Endpoints::AreasSearch.to_string())
-      .query(&[("text", search_term)])
-      .send();
+    let t = self.client.execute(get_areas_search(self.token.as_str(), search_term));
     self.handle_response::<AreaSearch>(t)
   }
 
@@ -423,18 +342,14 @@ impl EskomAPI {
     lat: impl ToString,
     long: impl ToString,
   ) -> Result<TopicsNearby, HttpError> {
-    let t = self
-      .client
-      .get(Endpoints::TopicsNearby.to_string())
-      .query(&[("lat", lat.to_string()), ("lon", long.to_string())])
-      .send();
+    let t = self.client.execute(get_topics_search(self.token.as_str(), lat, long));
     self.handle_response::<TopicsNearby>(t)
   }
 
   /// Check allowance allocated for token
   /// `NOTE`: This call doesn't count towards your quota.
   pub fn check_allowance(&self) -> Result<AllowanceCheck, HttpError> {
-    let t = self.client.get(Endpoints::CheckAllowace.to_string()).send();
+    let t = self.client.execute(check_allowance(self.token.as_str()));
     self.handle_response::<AllowanceCheck>(t)
   }
 
