@@ -2,14 +2,13 @@ use std::borrow::Cow;
 
 #[cfg(any(feature = "async", doc))]
 use async_trait::async_trait;
-#[cfg(any(feature = "reqwest", doc))]
-use http::StatusCode;
+
 use serde::de::DeserializeOwned;
 
 #[cfg(any(feature = "ureq", doc))]
 use crate::ureq_client::handle_ureq_response;
 
-use crate::errors::{APIError, HttpError};
+use crate::errors::{HttpError};
 
 pub trait Endpoint {
   type Output: DeserializeOwned;

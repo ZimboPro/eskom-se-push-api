@@ -1,4 +1,4 @@
-use eskom_se_push_api::{allowance::{AllowanceCheckURLBuilder, Allowance, AllowanceCheck}, Endpoint, constants::TOKEN_KEY, ureq_client::handle_ureq_response};
+use eskom_se_push_api::{allowance::{AllowanceCheckURLBuilder, Allowance, AllowanceCheck}, Endpoint, constants::TOKEN_KEY, reqwest_blocking_client::handle_reqwest_response_blocking};
 use http::header;
 
 fn main() {

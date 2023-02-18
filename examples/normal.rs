@@ -1,10 +1,10 @@
 use eskom_se_push_api::{
-  allowance::{Allowance, AllowanceCheck, AllowanceCheckURLBuilder},
+  allowance::{AllowanceCheck, AllowanceCheckURLBuilder},
   constants::TOKEN_KEY,
   ureq_client::handle_ureq_response,
   Endpoint,
 };
-use http::header;
+
 
 fn main() {
   let api = AllowanceCheckURLBuilder::default().build().unwrap();

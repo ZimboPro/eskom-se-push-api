@@ -45,7 +45,7 @@ features=["ureq"]
 
 [[example]]
 name = "normal_reqwest"
-path = "examples/normal.rs"
+path = "examples/normal_reqwest.rs"
 features=["sync", "reqwest"]
 
 [[example]]
