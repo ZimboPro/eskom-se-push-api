@@ -125,9 +125,7 @@ pub fn handle_ureq_response<T: DeserializeOwned>(
       500..=509 => Err(HttpError::APIError(APIError::ServerError(
         response.into_string().unwrap(),
       ))),
-      _a => {
-        Err(HttpError::Unknown)
-      }
+      _a => Err(HttpError::Unknown),
     },
     Err(_) => Err(HttpError::NoInternet),
   }

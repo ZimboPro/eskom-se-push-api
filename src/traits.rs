@@ -8,7 +8,7 @@ use serde::de::DeserializeOwned;
 #[cfg(any(feature = "ureq", doc))]
 use crate::ureq_client::handle_ureq_response;
 
-use crate::errors::{HttpError};
+use crate::errors::HttpError;
 
 pub trait Endpoint {
   type Output: DeserializeOwned;

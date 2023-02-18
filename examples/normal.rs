@@ -5,7 +5,6 @@ use eskom_se_push_api::{
   Endpoint,
 };
 
-
 fn main() {
   let api = AllowanceCheckURLBuilder::default().build().unwrap();
   // Need to import the Endpoint trait
