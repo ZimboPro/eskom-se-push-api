@@ -26,7 +26,10 @@ ureq = { version = "2.6.2", features = ["gzip", "json"], optional = true }
 url = "2.3.1"
 
 [features]
-default=[]
+default=["ureq",
+"async",
+"sync",
+"reqwest",]
 async=["async-trait"]
 sync=[]
 ureq=["dep:ureq"]
@@ -46,8 +49,33 @@ path = "examples/normal.rs"
 features=["sync", "reqwest"]
 
 [[example]]
+name = "reqwest_client"
+path = "examples/reqwest_client.rs"
+features=["sync", "reqwest"]
+
+[[example]]
 name = "get_status"
 path = "examples/get_status.rs"
+features=["ureq"]
+
+[[example]]
+name = "area_details"
+path = "examples/area_details.rs"
+features=["ureq"]
+
+[[example]]
+name = "area_search"
+path = "examples/area_search.rs"
+features=["ureq"]
+
+[[example]]
+name = "custom_env"
+path = "examples/custom_env.rs"
+features=["ureq"]
+
+[[example]]
+name = "ureq_client"
+path = "examples/ureq_client.rs"
 features=["ureq"]
 
 

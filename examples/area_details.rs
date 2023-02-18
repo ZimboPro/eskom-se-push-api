@@ -1,14 +1,23 @@
-use eskom_se_push_api::EskomAPI;
+use eskom_se_push_api::area_info::{AreaInfoURLBuilder, AreaInfo};
+use eskom_se_push_api::{get_token_from_env, constants::TOKEN_KEY, Endpoint, ureq_client::handle_ureq_response};
 
 fn main() {
-  let api = EskomAPI::new_with_env(None);
-  let resp = api.area_info("tshwane-6-brooklyn");
-  match resp {
-    Ok(area_info) => {
-      println!("{:?}", area_info);
+  match get_token_from_env(None) {
+    Ok(val) => {
+      let api = AreaInfoURLBuilder::default().area_id("tshwane-6-brooklyn".to_owned()).build().unwrap();
+      // Need to import the Endpoint trait
+      let response = ureq::request(api.method(), api.url().unwrap().as_str())
+            .set(TOKEN_KEY, &val)
+            .call();
+      match handle_ureq_response::<AreaInfo>(response) {
+        Ok(status) => {
+          println!("{:?}", status);
+        }
+        Err(e) => {
+          eprintln!("Error: {}", e);
+        }
+      }
     }
-    Err(e) => {
-      eprintln!("Error: {}", e);
-    }
+    Err(e) => panic!("Environment variable error: {}", e),
   }
 }
