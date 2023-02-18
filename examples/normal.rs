@@ -1,13 +1,17 @@
-use eskom_se_push_api::{allowance::{AllowanceCheckURLBuilder, Allowance, AllowanceCheck}, Endpoint, constants::TOKEN_KEY, ureq_client::handle_ureq_response};
+use eskom_se_push_api::{
+  allowance::{Allowance, AllowanceCheck, AllowanceCheckURLBuilder},
+  constants::TOKEN_KEY,
+  ureq_client::handle_ureq_response,
+  Endpoint,
+};
 use http::header;
-
 
 fn main() {
   let api = AllowanceCheckURLBuilder::default().build().unwrap();
   // Need to import the Endpoint trait
   let response = ureq::request(api.method(), api.url().unwrap().as_str())
-        .set(TOKEN_KEY, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
-        .call();
+    .set(TOKEN_KEY, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+    .call();
   match handle_ureq_response::<AllowanceCheck>(response) {
     Ok(allowance) => {
       println!(

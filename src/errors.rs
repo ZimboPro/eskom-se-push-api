@@ -9,7 +9,7 @@ pub enum HttpError {
   #[error("UnknownError")]
   Unknown,
   #[error("Response Error: {0}")]
-  #[cfg(any(feature= "reqwest", doc))]
+  #[cfg(any(feature = "reqwest", doc))]
   ResponseError(#[from] reqwest::Error),
   #[cfg(any(feature = "ureq", doc))]
   #[error("Response Error: {0}")]

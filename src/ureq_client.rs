@@ -1,5 +1,5 @@
 //! A blocking client using the `ureq` http client.
-//! 
+//!
 //! # Optional
 //! Requires the `ureq` feature to be enabled
 
@@ -11,9 +11,10 @@ use crate::{
   area_nearby::{AreaNearby, AreasNearbyURLBuilder},
   area_search::{AreaSearch, AreaSearchURLBuilder},
   errors::{APIError, HttpError},
+  get_token_from_env,
   status::{EskomStatus, EskomStatusUrl},
   topics_nearby::{TopicsNearby, TopicsNearbyUrlBuilder},
-  Endpoint, get_token_from_env,
+  Endpoint,
 };
 
 pub struct UreqClient {
@@ -113,11 +114,9 @@ pub fn handle_ureq_response<T: DeserializeOwned>(
   response: Result<ureq::Response, ureq::Error>,
 ) -> Result<T, HttpError> {
   match response {
-    Ok(resp) => {
-      resp
+    Ok(resp) => resp
       .into_json::<T>()
-      .map_err(|e| HttpError::UnknownError(e.to_string()))
-    },
+      .map_err(|e| HttpError::UnknownError(e.to_string())),
     Err(ureq::Error::Status(code, response)) => match code {
       400 => Err(HttpError::APIError(APIError::BadRequest)),
       403 => Err(HttpError::APIError(APIError::Forbidden)),
@@ -127,9 +126,8 @@ pub fn handle_ureq_response<T: DeserializeOwned>(
         response.into_string().unwrap(),
       ))),
       a => {
-        println!("AAA {}", a);
         Err(HttpError::Unknown)
-      },
+      }
     },
     Err(_) => Err(HttpError::NoInternet),
   }

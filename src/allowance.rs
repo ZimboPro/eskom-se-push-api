@@ -3,7 +3,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::traits::Endpoint;
-#[cfg(any(feature= "async", doc))]
+#[cfg(any(feature = "async", doc))]
 use crate::traits::EndpointAsync;
 
 /// The URL builder for the Allowance Check endpoint
@@ -27,7 +27,7 @@ impl Endpoint for AllowanceCheckURL {
     Ok(url::Url::parse(&self.endpoint()).unwrap())
   }
 }
-#[cfg(any(feature= "async", doc))]
+#[cfg(any(feature = "async", doc))]
 impl EndpointAsync for AllowanceCheckURL {}
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

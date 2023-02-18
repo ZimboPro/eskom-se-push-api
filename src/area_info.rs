@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use crate::errors::HttpError;
 use crate::traits::Endpoint;
-#[cfg(any(feature= "async", doc))]
+#[cfg(any(feature = "async", doc))]
 use crate::traits::EndpointAsync;
 
 /// The URL builder for the Allowance Check endpoint

@@ -7,7 +7,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::traits::Endpoint;
-#[cfg(any(feature= "async", doc))]
+#[cfg(any(feature = "async", doc))]
 use crate::traits::EndpointAsync;
 
 pub enum Stage {
@@ -75,7 +75,7 @@ impl Endpoint for EskomStatusUrl {
   }
 }
 
-#[cfg(any(feature= "async", doc))]
+#[cfg(any(feature = "async", doc))]
 impl EndpointAsync for EskomStatusUrl {}
 
 /// The status of load shedding nation wide and certain areas if they don't follow the

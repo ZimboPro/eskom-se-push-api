@@ -56,7 +56,9 @@ pub trait Endpoint {
   /// Requires the `reqwest` and `sync` features to be enabled
   fn reqwest_client(&self, client: &reqwest::blocking::Client) -> Result<Self::Output, HttpError> {
     let url_endpoint = self.url()?;
-    crate::reqwest_blocking_client::handle_reqwest_response_blocking::<Self::Output>(client.get(url_endpoint.as_str()).send())
+    crate::reqwest_blocking_client::handle_reqwest_response_blocking::<Self::Output>(
+      client.get(url_endpoint.as_str()).send(),
+    )
   }
 
   #[cfg(any(all(feature = "reqwest", feature = "sync"), doc))]
@@ -74,7 +76,9 @@ pub trait Endpoint {
       .default_headers(headers)
       .build()
       .unwrap();
-    crate::reqwest_blocking_client::handle_reqwest_response_blocking::<Self::Output>(client.get(url_endpoint.as_str()).send())
+    crate::reqwest_blocking_client::handle_reqwest_response_blocking::<Self::Output>(
+      client.get(url_endpoint.as_str()).send(),
+    )
   }
 }
 
@@ -90,7 +94,10 @@ pub trait EndpointAsync: Endpoint {
     client: &reqwest::Client,
   ) -> Result<Self::Output, HttpError> {
     let url_endpoint = self.url()?;
-    crate::reqwest_async_client::handle_reqwest_response:: <Self::Output>(client.get(url_endpoint.as_str()).send().await).await
+    crate::reqwest_async_client::handle_reqwest_response::<Self::Output>(
+      client.get(url_endpoint.as_str()).send().await,
+    )
+    .await
   }
 
   #[cfg(any(all(feature = "reqwest", feature = "async"), doc))]
@@ -108,6 +115,9 @@ pub trait EndpointAsync: Endpoint {
       .default_headers(headers)
       .build()
       .unwrap();
-    crate::reqwest_async_client::handle_reqwest_response:: <Self::Output>(client.get(url_endpoint.as_str()).send().await).await
+    crate::reqwest_async_client::handle_reqwest_response::<Self::Output>(
+      client.get(url_endpoint.as_str()).send().await,
+    )
+    .await
   }
 }

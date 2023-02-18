@@ -82,15 +82,15 @@
 //! There are currently 4 features but some are used in combinations to enable certain functionality
 //!
 //! * `reqwest` and `async`: Adds an async reqwest client and response handler
-//! 
+//!
 //! * `reqwest` and `sync`: Adds a blocking reqwest client and response handler
-//! 
+//!
 //! * `ureq`: Adds a ureq client and response handler
 //!
 //! None of the features are added by default
 
 pub use traits::Endpoint;
-#[cfg(any(feature = "async",doc))]
+#[cfg(any(feature = "async", doc))]
 pub use traits::EndpointAsync;
 extern crate thiserror;
 
@@ -100,17 +100,17 @@ pub mod area_nearby;
 pub mod area_search;
 pub mod constants;
 pub mod errors;
-#[cfg(any(all(feature = "async", feature = "reqwest"),doc))]
+#[cfg(any(all(feature = "async", feature = "reqwest"), doc))]
 pub mod reqwest_async_client;
-#[cfg(any(all(feature = "sync", feature = "reqwest"),doc))]
+#[cfg(any(all(feature = "sync", feature = "reqwest"), doc))]
 pub mod reqwest_blocking_client;
 pub mod status;
 pub mod topics_nearby;
 mod traits;
-#[cfg(any(feature = "ureq",doc))]
+#[cfg(any(feature = "ureq", doc))]
 pub mod ureq_client;
 
-pub fn get_token_from_env(var_name: Option<&str>) -> Result<String, std::env::VarError>  {
+pub fn get_token_from_env(var_name: Option<&str>) -> Result<String, std::env::VarError> {
   dotenv::dotenv().ok();
   let key = var_name.unwrap_or("ESKOMSEPUSH_API_KEY");
   std::env::var(key)

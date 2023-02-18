@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use crate::errors::HttpError;
 use crate::traits::Endpoint;
-#[cfg(any(feature= "async", doc))]
+#[cfg(any(feature = "async", doc))]
 use crate::traits::EndpointAsync;
 
 #[derive(Default, Builder, Debug)]
@@ -31,7 +31,7 @@ impl Endpoint for AreaSearchURL {
   }
 }
 
-#[cfg(any(feature= "async", doc))]
+#[cfg(any(feature = "async", doc))]
 impl EndpointAsync for AreaSearchURL {}
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

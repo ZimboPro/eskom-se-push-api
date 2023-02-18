@@ -1,5 +1,5 @@
 //! A blocking client using the `reqwest` http client.
-//! 
+//!
 //! # Optional
 //! Requires the `reqwest` and `sync` features to be enabled
 
@@ -12,10 +12,11 @@ use crate::{
   area_nearby::{AreaNearby, AreasNearbyURLBuilder},
   area_search::{AreaSearch, AreaSearchURLBuilder},
   constants::TOKEN_KEY,
-  errors::{HttpError},
+  errors::HttpError,
+  get_token_from_env,
   status::{EskomStatus, EskomStatusUrl},
   topics_nearby::{TopicsNearby, TopicsNearbyUrlBuilder},
-  Endpoint, get_token_from_env,
+  Endpoint,
 };
 
 pub struct ReqwestBlockingCLient {
@@ -125,7 +126,6 @@ impl ReqwestBlockingCLient {
   }
 }
 
-
 /// A response handler for `reqwest::blocking` to map the response to the given structure or relevant error
 /// ```rust
 /// let statusUrl = EskomStatusUrlBuilder::default().build().unwrap();
@@ -144,9 +144,9 @@ impl ReqwestBlockingCLient {
 pub fn handle_reqwest_response_blocking<T: DeserializeOwned>(
   response: Result<reqwest::blocking::Response, reqwest::Error>,
 ) -> Result<T, HttpError> {
-    use http::StatusCode;
+  use http::StatusCode;
 
-    use crate::errors::APIError;
+  use crate::errors::APIError;
 
   match response {
     Ok(resp) => {

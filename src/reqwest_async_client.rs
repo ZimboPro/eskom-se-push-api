@@ -1,5 +1,5 @@
 //! An async client using the `reqwest` http client.
-//! 
+//!
 //! # Optional
 //! Requires the `reqwest` and `async` features to be enabled
 use http::{header, StatusCode};
@@ -11,10 +11,11 @@ use crate::{
   area_nearby::{AreaNearby, AreasNearbyURLBuilder},
   area_search::{AreaSearch, AreaSearchURLBuilder},
   constants::TOKEN_KEY,
-  errors::{HttpError, APIError},
+  errors::{APIError, HttpError},
+  get_token_from_env,
   status::{EskomStatus, EskomStatusUrl},
   topics_nearby::{TopicsNearby, TopicsNearbyUrlBuilder},
-  EndpointAsync, get_token_from_env,
+  EndpointAsync,
 };
 
 pub struct ReqwestAsyncCLient {
@@ -123,7 +124,6 @@ impl ReqwestAsyncCLient {
     t.reqwest_client_async(&self.client).await
   }
 }
-
 
 /// A response handler for `reqwest` with async to map the response to the given structure or relevant error
 /// ```rust
