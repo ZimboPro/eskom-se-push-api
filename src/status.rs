@@ -2,8 +2,13 @@ use std::collections::HashMap;
 
 use chrono::DateTime;
 use chrono::Utc;
+use derive_builder::Builder;
 use serde::Deserialize;
 use serde::Serialize;
+
+use crate::traits::Endpoint;
+#[cfg(any(feature = "async", doc))]
+use crate::traits::EndpointAsync;
 
 pub enum Stage {
   NoLoadShedding,
@@ -53,6 +58,25 @@ impl From<String> for Stage {
     }
   }
 }
+
+#[derive(Default, Builder, Debug)]
+#[builder(setter(into))]
+pub struct EskomStatusUrl {}
+
+impl Endpoint for EskomStatusUrl {
+  type Output = EskomStatus;
+
+  fn endpoint(&self) -> std::borrow::Cow<'static, str> {
+    std::borrow::Cow::Borrowed("https://developer.sepush.co.za/business/2.0/status")
+  }
+
+  fn url(&self) -> Result<url::Url, crate::errors::HttpError> {
+    Ok(url::Url::parse(&self.endpoint()).unwrap())
+  }
+}
+
+#[cfg(any(feature = "async", doc))]
+impl EndpointAsync for EskomStatusUrl {}
 
 /// The status of load shedding nation wide and certain areas if they don't follow the
 /// nation wide status

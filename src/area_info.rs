@@ -1,5 +1,43 @@
+use derive_builder::Builder;
 use serde::Deserialize;
 use serde::Serialize;
+
+use crate::errors::HttpError;
+use crate::traits::Endpoint;
+#[cfg(any(feature = "async", doc))]
+use crate::traits::EndpointAsync;
+
+/// The URL builder for the Allowance Check endpoint
+/// ```rust
+/// let t = AllowanceCheckURL::default()
+/// // returns the url for built the endpoint
+/// t.url().unwrap()
+/// ```
+#[derive(Default, Builder, Debug)]
+#[builder()]
+pub struct AreaInfoURL {
+  area_id: String,
+}
+
+impl Endpoint for AreaInfoURL {
+  type Output = AreaInfo;
+
+  fn endpoint(&self) -> std::borrow::Cow<'static, str> {
+    std::borrow::Cow::Borrowed("https://developer.sepush.co.za/business/2.0/area")
+  }
+
+  fn url(&self) -> Result<url::Url, crate::errors::HttpError> {
+    let mut u = url::Url::parse(&self.endpoint()).unwrap();
+    if self.area_id.trim().is_empty() {
+      Err(HttpError::AreaIdNotSet)
+    } else {
+      u.set_query(Some(format!("id={}", self.area_id).as_str()));
+      Ok(u)
+    }
+  }
+}
+#[cfg(any(feature = "async", doc))]
+impl EndpointAsync for AreaInfoURL {}
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
