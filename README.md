@@ -1,3 +1,5 @@
+[![crates.io](https://img.shields.io/crates/v/eskom_se_push-api.svg)](https://crates.io/crates/eskom_se_push-api)
+[![docs](https://docs.rs/eskom_se_push-api/badge.svg)](https://docs.rs/eskom_se_push-api)
 # EskomSePush API
 
 This Rust library is an unofficial library to the [EskomSePush](https://sepush.co.za) API 
