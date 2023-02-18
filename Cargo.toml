@@ -1,6 +1,6 @@
 [package]
 name = "eskom_se_push-api"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 repository = "https://github.com/ZimboPro/eskom-se-push-api"
 description = "API Bindings to the Eskom-se-Push API"
